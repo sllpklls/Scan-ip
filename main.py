@@ -5,10 +5,17 @@ import re
 csv_file_path = 'domain.csv'
 
 def check_ip_prefix(ip):
-    if ip.startswith("103.159.50."):
-        return ',DA'
-    if ip.startswith("142.250.198."):
-        return ',DB'
+    reader = csv.reader(open('group.csv', newline='', encoding='utf-8'))
+    for row in reader:
+        prefix = row[0]
+        group = row[1]
+        if ip.startswith(prefix):
+            return f',{group}'
+
+    # if ip.startswith("103.159.50."):
+    #     return ',DA'
+    # if ip.startswith("142.250.198."):
+    #     return ',DB'
     return ',Unknown'
 
 output_string = ''
