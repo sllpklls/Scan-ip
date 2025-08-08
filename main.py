@@ -9,9 +9,10 @@ def check_ip_prefix(ip):
         return ',DA'
     if ip.startswith("142.250.198."):
         return ',DB'
-    return ''
+    return ',Unknown'
 
 output_string = ''
+output_failed = ''
 
 with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile)
@@ -32,13 +33,16 @@ with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
                     # print(output)
                     output_string += output + '\n'  
                 else:
-                    print(f"{domain} -> IP not found")
+                    print()
+                    # output_failed += f"{domain}, Failed"
             else:
-                print(f"{domain} -> Ping failed")
+                output_failed += f"{domain},NotExist" + '\n'
         except Exception as e:
             print(f"{domain} -> Error: {e}")
 
 print(output_string, end='') 
+print('--------')
+print(output_failed, end='')
 with open('output.csv', 'w', newline='', encoding='utf-8') as outfile:
     writer = csv.writer(outfile)
     writer.writerow(['domain', 'ip', 'group'])
@@ -47,3 +51,4 @@ with open('output.csv', 'w', newline='', encoding='utf-8') as outfile:
         if len(parts) >= 2:
             group = parts[2] if len(parts) > 2 else ''
             writer.writerow([parts[0], parts[1], group])
+
