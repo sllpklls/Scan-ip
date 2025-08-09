@@ -28,7 +28,7 @@ with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
 
         domain = row[0]
         try:
-            result = subprocess.run(['ping', '-c', '1', domain], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(['ping', '-c', '1', domain], capture_output=True, text=True, timeout=2)
             if result.returncode == 0:
                 match = re.search(r'\(([\d\.]+)\)', result.stdout)
                 if match:
