@@ -39,28 +39,37 @@ def check_ip_group(ip):
     #     return ',DB'
     return ',Unknown'
 
+def valid_domain(domain):
+    if not isinstance(domain, str) or domain.strip() == '' or domain.lower() == 'nan':
+        return False
+    return True
+
 def scan_ip(reader):
     global output_string, output_failed
     for row in reader:
-        domain = row[17]
-        if not isinstance(domain, str) or domain.strip() == '' or domain.lower() == 'nan':
+        domain1 = row[17]
+        domain2 = row[18]
+        if not valid_domain(domain1) and not valid_domain(domain2):
             continue
         try:
-            result = subprocess.run(['ping', '-c', '1', domain], capture_output=True, text=True, timeout=2)
-            if result.returncode == 0:
+            result = subprocess.run(['ping', '-c', '1', domain1], capture_output=True, text=True, timeout=2)
+            result2 = subprocess.run(['ping', '-c', '1', domain2], capture_output=True, text=True, timeout=2)
+            if result.returncode == 0 and result2.returncode == 0:
                 match = re.search(r'\(([\d\.]+)\)', result.stdout)
-                if match:
+                match2 = re.search(r'\(([\d\.]+)\)', result2.stdout)
+                if match and match2:
                     ip = match.group(1)
-                    # print(ip)
-                    output = f"{domain},{ip}"
+                    ip2 = match2.group(1)
+                    print(f"{domain2} -> {ip2}")
+                    output = f"{domain1},{ip}"
                     output += check_ip_group(ip)
                     output_string += output + '\n'
                 else:
-                    print(f"{domain} -> No IP found")
+                    print(f"{domain1} -> No IP found")
             else:
-                output_failed += f"{domain},NotExist\n"
+                output_failed += f"{domain1},NotExist\n"
         except Exception as e:
-            print(f"{domain} -> Error: {e}")
+            print(f"{domain1} -> Error: {e}")
 
 if detect_file_type(file_path) == 'xlsx':
     df = pd.read_excel(file_path)
