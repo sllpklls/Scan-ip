@@ -7,6 +7,7 @@ import time
 
 output_string = ''
 output_failed = ''
+time_delay = 0
 file_path = '/Users/dragonfly/Documents/scan_ip/data/Book1.xlsx'
 
 def detect_file_type(file_path):
@@ -56,13 +57,37 @@ def check_ip_group_v2(ip):
         group = row[1]
         if ip.startswith(prefix):
             return f'{group}'
-    # if ip.startswith("103.159.50."):
-    #     return ',DA'
-    # if ip.startswith("142.250.198."):
-    #     return ',DB'
     return 'Unknown'
 
+def check_cross_ip(ip1, ip2, ip3, ip4):
+    if (ip1 == ip2) and (ip1 == ip3) and (ip1 == ip4):
+        return False
+    else:
+        return True
 
+
+
+def get_cidr_from_ip(ip):
+    try:
+        result = subprocess.run(["whois", ip], capture_output=True, text=True)
+        output = result.stdout
+
+        # Ưu tiên lấy CIDR
+        cidr_match = re.search(r"CIDR:\s*([\d\./,\s]+)", output, re.IGNORECASE)
+        if cidr_match:
+            # Trường hợp có nhiều CIDR, lấy cái đầu tiên
+            cidr = cidr_match.group(1).split(",")[0].strip()
+            return cidr
+
+        # Nếu không có CIDR thì lấy route
+        route_match = re.search(r"route:\s*([\d\.]+\/\d+)", output, re.IGNORECASE)
+        if route_match:
+            return route_match.group(1)
+
+        return None
+
+    except Exception as e:
+        return f"Lỗi: {e}"
 
 def valid_domain(domain):
     if not isinstance(domain, str) or domain.strip() == '' or domain.lower() == 'nan':
@@ -80,11 +105,11 @@ def scan_ip(reader):
             continue
         try:
             result = subprocess.run(['ping', '-c', '1', domain1], capture_output=True, text=True, timeout=2)
-            time.sleep(1)
+            time.sleep(time_delay)
             result2 = subprocess.run(['ping', '-c', '1', domain2], capture_output=True, text=True, timeout=2)
-            time.sleep(1)
+            time.sleep(time_delay)
             result3 = subprocess.run(['ping', '-c', '1', domain3], capture_output=True, text=True, timeout=2)
-            time.sleep(1)
+            time.sleep(time_delay)
             result4 = subprocess.run(['ping', '-c', '1', domain4], capture_output=True, text=True, timeout=2)
             if result.returncode == 0 and result2.returncode == 0 and result3.returncode == 0 and result4.returncode == 0:
                 match = re.search(r'\(([\d\.]+)\)', result.stdout)
@@ -96,8 +121,9 @@ def scan_ip(reader):
                     ip2 = match2.group(1)
                     ip3 = match3.group(1)
                     ip4 = match4.group(1)
-                    group_domain = f"{check_ip_group_v2(ip)},{check_ip_group_v2(ip2)},{check_ip_group_v2(ip3)},{check_ip_group_v2(ip4)}"
-                    print(group_domain)
+                    # group_domain = f"{check_ip_group_v2(ip)},{check_ip_group_v2(ip2)},{check_ip_group_v2(ip3)},{check_ip_group_v2(ip4)}"
+                    # print(group_domain)
+                    print(f"{get_cidr_from_ip(ip)},{get_cidr_from_ip(ip2)},{get_cidr_from_ip(ip3)},{get_cidr_from_ip(ip4)}")
                     # print(f"{domain2} -> {ip2}")
                     # output = f"{domain1},{ip}"
                     # output += check_ip_group(ip)
@@ -135,3 +161,7 @@ print(output_failed, end='')
 #             group = parts[2] if len(parts) > 2 else ''
 #             writer.writerow([parts[0], parts[1], group])
 
+    
+    
+print(get_cidr_from_ip('103.159.50.232'))
+    
