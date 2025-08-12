@@ -19,14 +19,7 @@ def detect_file_type(file_path):
         return 'xlsx'
     else:
         return 'unknown'
-
-# def check_ip_group(reader):
-#     for row in reader:
-#         prefix = row[0]
-#         group = row[1]
-#         if ip.startswith(prefix):
-#             return f',{group}' 
-#     return ',Unknown'
+    
 def check_ip_group(ip):
     reader = csv.reader(open('group.csv', newline='', encoding='utf-8'))
     for row in reader:
@@ -43,10 +36,6 @@ def check_ip_group(ip):
         group = row[1]
         if ip.startswith(prefix):
             return f',{group}'
-    # if ip.startswith("103.159.50."):
-    #     return ',DA'
-    # if ip.startswith("142.250.198."):
-    #     return ',DB'
     return ',Unknown'
 
 
@@ -64,7 +53,11 @@ def check_cross_ip(ip1, ip2, ip3, ip4):
         return False
     else:
         return True
-
+def compare_ip_groups(gip1, gip2, gip3, gip4):
+    if gip1 == gip2 and gip1 == gip3 and gip1 == gip4:
+        return True
+    else:
+        return False
 
 
 def get_cidr_from_ip(ip):
@@ -94,6 +87,21 @@ def valid_domain(domain):
         return False
     return True
 
+def write_output_to_file(output_string, output_path):
+    
+    file_exists = os.path.exists(output_path)
+    
+    with open(output_path, 'a', newline='', encoding='utf-8') as outfile:
+        writer = csv.writer(outfile)
+
+        if not file_exists:
+            writer.writerow(['App Domain1', 'App Domain2', 'WebDomain1', 'WebDomain2', 'status'])
+        
+        for line in output_string.strip().split('\n'):
+            row = [col.strip() for col in line.split(',')]
+            writer.writerow(row)
+            
+
 def scan_ip(reader):
     global output_string, output_failed
     for row in reader:
@@ -101,8 +109,10 @@ def scan_ip(reader):
         domain2 = row[18]
         domain3 = row[19]
         domain4 = row[20]
+        print("Checking valid domain....")
         if not valid_domain(domain1) and not valid_domain(domain2) and not valid_domain(domain3) and not valid_domain(domain4):
             continue
+            print("Checked valid domain")
         try:
             result = subprocess.run(['ping', '-c', '1', domain1], capture_output=True, text=True, timeout=2)
             time.sleep(time_delay)
@@ -121,19 +131,24 @@ def scan_ip(reader):
                     ip2 = match2.group(1)
                     ip3 = match3.group(1)
                     ip4 = match4.group(1)
-                    # group_domain = f"{check_ip_group_v2(ip)},{check_ip_group_v2(ip2)},{check_ip_group_v2(ip3)},{check_ip_group_v2(ip4)}"
-                    # print(group_domain)
-                    print(f"{get_cidr_from_ip(ip)},{get_cidr_from_ip(ip2)},{get_cidr_from_ip(ip3)},{get_cidr_from_ip(ip4)}")
-                    # print(f"{domain2} -> {ip2}")
-                    # output = f"{domain1},{ip}"
-                    # output += check_ip_group(ip)
-                    # output_string += output + '\n'
+                    group_domain = f"{check_ip_group_v2(ip)},{check_ip_group_v2(ip2)},{check_ip_group_v2(ip3)},{check_ip_group_v2(ip4)}"
+                    if compare_ip_groups(check_ip_group_v2(ip), check_ip_group_v2(ip2), check_ip_group_v2(ip3), check_ip_group_v2(ip4)):
+                        group_domain += ',NonCross'
+                    else:
+                        group_domain += ',Cross'
+
                 else:
                     print(f"{domain1} -> No IP found")
             else:
                 output_failed += f"{domain1},NotExist\n"
+            # print(group_domain)
+            write_output_to_file(group_domain, 'output.csv')        
         except Exception as e:
             print(f"{domain1} -> Error: {e}")
+
+
+
+# main
 
 if detect_file_type(file_path) == 'xlsx':
     df = pd.read_excel(file_path)
@@ -145,23 +160,6 @@ elif detect_file_type(file_path) == 'csv':
         scan_ip(reader_csv)
 
 
-csv_file_path = 'domain.csv'
-
-
-
-print(output_string, end='') 
-print('--------')
-print(output_failed, end='')
-# with open('output.csv', 'w', newline='', encoding='utf-8') as outfile:
-#     writer = csv.writer(outfile)
-#     writer.writerow(['domain', 'ip', 'group'])
-#     for line in output_string.strip().split('\n'):
-#         parts = line.split(',')
-#         if len(parts) >= 2:
-#             group = parts[2] if len(parts) > 2 else ''
-#             writer.writerow([parts[0], parts[1], group])
 
     
-    
-print(get_cidr_from_ip('103.159.50.232'))
-    
+
