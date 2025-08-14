@@ -5,6 +5,7 @@ import pandas as pd
 import os
 import time
 
+output_ip = ''
 output_string = ''
 output_failed = ''
 time_delay = 0
@@ -111,7 +112,7 @@ def check_empty_domain_to_ip(domain):
     
 
 def scan_ip(reader):
-    global output_string, output_failed
+    global output_string, output_failed, output_ip
     for row in reader:
         domain1 = row[17]
         domain2 = row[18]
@@ -126,12 +127,15 @@ def scan_ip(reader):
         ip2 = check_empty_domain_to_ip(domain2)
         ip3 = check_empty_domain_to_ip(domain3)
         ip4 = check_empty_domain_to_ip(domain4)
+        # output_ip += f"{ip1},{ip2},{ip3},{ip4}" + '\n'
         #    group_ip = f"{check_empty_domain_to_ip(domain1)},{check_empty_domain_to_ip(domain2)},{check_empty_domain_to_ip(domain3)},{check_empty_domain_to_ip(domain4)}"
         if(check_ip_group_v2(ip1) == check_ip_group_v2(ip2) and check_ip_group_v2(ip1) == check_ip_group_v2(ip3) and check_ip_group_v2(ip1) == check_ip_group_v2(ip4)):
             group_ip =  f"{check_ip_group_v2(ip1)},{check_ip_group_v2(ip2)},{check_ip_group_v2(ip3)},{check_ip_group_v2(ip4)},NonCross"
+            output_ip += f"{ip1},{ip2},{ip3},{ip4}" + ",NonCross" + '\n'
             # print(group_ip)
         else:
             group_ip = f"{check_ip_group_v2(ip1)},{check_ip_group_v2(ip2)},{check_ip_group_v2(ip3)},{check_ip_group_v2(ip4)},Cross"
+            output_ip += f"{ip1},{ip2},{ip3},{ip4}" + ",Cross" + '\n'
             # print(group_ip)
         output_string += group_ip + '\n'
 
@@ -147,6 +151,8 @@ def export_to_xlsx(input_path, output_path):
 # main
 option_export_file_ip = input("Do you want to export ip file? (y/n): ")[0]   
 
+
+
 if detect_file_type(file_path) == 'xlsx':
     df = pd.read_excel(file_path)
     reader_xlsx = df.values.tolist()
@@ -156,7 +162,8 @@ elif detect_file_type(file_path) == 'csv':
         reader_csv = csv.reader(csvfile)
         scan_ip(reader_csv)
 write_output_to_file(output_string, '/Users/dragonfly/Documents/scan_ip/output/output.csv')
-
+if option_export_file_ip.lower() == 'y':
+    write_output_to_file(output_ip, '/Users/dragonfly/Documents/scan_ip/output/output_ip.csv')
 
 # export to xlsx
 csv_file = '/Users/dragonfly/Documents/scan_ip/output/output.csv'
