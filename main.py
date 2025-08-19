@@ -109,7 +109,23 @@ def check_empty_domain_to_ip(domain): #check empty cell and convert domain to ip
     except Exception as e:
         return ""
     
-
+def check_empty_domain_to_ip(domain):
+    if not valid_domain(domain):
+        return "continue"
+    try:
+        if pd.notna(domain) and domain != "":
+            # Windows dùng -n thay vì -c
+            result = subprocess.run(['ping', '-n', '1', domain],
+                                    capture_output=True, text=True, timeout=2)
+            if result.returncode == 0:
+                # Trên Windows IP nằm trong dấu []
+                match = re.search(r'\[([\d\.]+)\]', result.stdout)
+                if match:
+                    ip = match.group(1)
+                    return ip
+            return "CantPing"
+    except Exception as e:
+        return ""
 
 def scan_ip(reader): #2.Scan ip from csv or xlsx file
     global output_string, output_failed, output_ip, output_cidr, option_export_file_cidr
